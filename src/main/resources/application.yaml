@@ -1,0 +1,26 @@
+logging.level.org.springframework.web: INFO
+logging.level.com.example: DEBUG
+
+spring:
+  application:
+    name: "media_saver"
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/media_save
+    username: postgres
+    password: postgres
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+# Media saver configuration
+media:
+  saver:
+    connect-timeout: 10000  # milliseconds
+    read-timeout: 10000     # milliseconds
+    max-filename-length: 100
+    default-save-path: "C:/temp"
+    use-url-as-filename: false
+
+

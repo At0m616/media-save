@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: url_media_save
+      changes:
+        - sqlFile:
+            path: db/changelog/01_create_url_request_entity.sql 
