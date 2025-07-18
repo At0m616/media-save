@@ -44,14 +44,12 @@ public class SaveMediaService {
         if (!saver.isValidUrl(baseUrl)) {
             throw new IllegalArgumentException("Invalid base URL: " + baseUrl);
         }
-
-        boolean firstStep = true;
         String cleanBaseUrl = baseUrl.substring(0, baseUrl.indexOf("/", 8));
 
         long start = System.currentTimeMillis();
         String pathName = Objects.requireNonNullElseGet(pathToSave, () -> "C:/temp/" + baseUrl.substring(baseUrl.lastIndexOf("/")));
         Integer downloadFiles = 0;
-        List<String> urls = new ArrayList<>();
+        List<String> urls;
         HttpURLConnection connection = null;
         
         // Collect all download results
@@ -66,7 +64,7 @@ public class SaveMediaService {
 
             // Filter URLs with valid extensions
             List<String> mediaUrls = urls.stream()
-                    .filter(s -> saver.getFileExtension(s).length() > 0)
+                    .filter(s -> !saver.getFileExtension(s).isEmpty())
                     .toList();
 
             // Download files with valid extensions and get detailed results
@@ -84,10 +82,10 @@ public class SaveMediaService {
             log.info("Map of nested URLs {}", nestedUrls);
             
             // Process nested URLs if enabled
-            if (Boolean.TRUE.equals(checkNested) && firstStep) {
+            if (Boolean.TRUE.equals(checkNested)) {
                 List<String> collect = nestedUrls.stream()
                         .filter(s -> s.startsWith(cleanBaseUrl))
-                        .collect(Collectors.toList());
+                        .toList();
                 tryToDownloadNested(new LinkedList<>(collect), pathName, cleanBaseUrl, notSaveFileInKb, allDownloadResults);
             }
             
@@ -108,8 +106,8 @@ public class SaveMediaService {
             log.error("Failed to delete duplicates in folder {}: {}", pathName, e.getMessage(), e);
         }
 
-        String requiredTime = "It works: " + (System.currentTimeMillis() - start) + " ms";
-        log.info(requiredTime);
+        Long requiredTime = (System.currentTimeMillis() - start);
+        log.info("It works: {} ms", requiredTime);
         
         // Aggregate download statistics
         int totalProcessed = allDownloadResults.stream().mapToInt(DownloadResultDto::getTotalProcessed).sum();
@@ -129,7 +127,7 @@ public class SaveMediaService {
                 .collect(Collectors.toList());
         
         return InfoResponseDto.builder()
-                .requiredTime(requiredTime)
+                .requiredTimeMs(requiredTime)
                 .downloadFiles(totalSuccessful)
                 .fromUrl(baseUrl)
                 .searchFiles(urls.size())

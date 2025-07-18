@@ -4,4 +4,18 @@ databaseChangeLog:
       author: url_media_save
       changes:
         - sqlFile:
-            path: db/changelog/01_create_url_request_entity.sql 
+            path: db/changelog/01_create_url_request_entity.sql
+  - changeSet:
+      id: 2
+      author: url_media_save
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE url_request_entity
+                ADD COLUMN required_time_ms bigint,
+                ADD COLUMN delete_duplicates int,
+                ADD COLUMN total_processed int,
+                ADD COLUMN total_successful int,
+                ADD COLUMN total_failed int; 

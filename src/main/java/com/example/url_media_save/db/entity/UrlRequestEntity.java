@@ -27,6 +27,11 @@ public class UrlRequestEntity {
     Integer notSaveFileInKb;
     Boolean checkNested;
     LocalDateTime requestTime;
+    Long requiredTimeMs;
+    Integer deleteDuplicates;
+    Integer totalProcessed;
+    Integer totalSuccessful;
+    Integer totalFailed;
 
     @Override
     public boolean equals(Object o) {

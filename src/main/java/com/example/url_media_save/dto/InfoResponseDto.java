@@ -11,9 +11,9 @@ public class InfoResponseDto {
     private Integer searchFiles;
     private Integer downloadFiles;
     private Integer deleteDuplicates;
-    private String requiredTime;
+    private Long requiredTimeMs;
     private String fromUrl;
-    
+
     private Integer totalProcessed;
     private Integer totalSuccessful;
     private Integer totalFailed;

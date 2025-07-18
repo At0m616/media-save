@@ -1,5 +1,6 @@
 package com.example.url_media_save.controller;
 
+import com.example.url_media_save.db.entity.UrlRequestEntity;
 import com.example.url_media_save.db.service.UrlService;
 import com.example.url_media_save.dto.InfoResponseDto;
 import com.example.url_media_save.dto.UrlRequestDto;
@@ -22,18 +23,17 @@ public class UrlMediaParseController {
     private final UrlService urlService;
 
     @PostMapping("/mediaget")
-    ResponseEntity<InfoResponseDto> getMedia(@RequestBody UrlRequestDto url, @RequestHeader HttpHeaders headers) {
+    ResponseEntity<?> getMedia(@RequestBody UrlRequestDto url, @RequestHeader HttpHeaders headers) {
         log.info("Request from: {} time: {}", headers, url.getRequestTime());
-        //todo продумать сущности для бд, допилить миграции
         InfoResponseDto mediaFromUrl;
         try {
-            urlService.save(url);
-            mediaFromUrl = saveMediaService
-                    .getMediaFromUrl(url.getUrl(), url.getPathToSave(), url.getNotSaveFileInKb(), url.getCheckNested());
+            UrlRequestEntity entity = urlService.save(url);
+            mediaFromUrl = saveMediaService.getMediaFromUrl(url.getUrl(), url.getPathToSave(), url.getNotSaveFileInKb(), url.getCheckNested());
+            urlService.saveResultInfo(entity, mediaFromUrl.getRequiredTimeMs(), mediaFromUrl.getDeleteDuplicates(), mediaFromUrl.getTotalProcessed(), mediaFromUrl.getTotalSuccessful(), mediaFromUrl.getTotalFailed());
         } catch (Exception e) {
             log.error("Bad request: {}", e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(InfoResponseDto.builder().fromUrl(url.getUrl()).build());
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(mediaFromUrl);
     }

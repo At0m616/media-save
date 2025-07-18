@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,12 @@ public class Saver {
         long start = System.currentTimeMillis();
         List<String> checkUrl = new ArrayList<>();
         List<String> failedDownloads = new ArrayList<>();
+        try {
+            checkDirectoryExists(pathName);
+        } catch (IOException e) {
+            log.error("Failed to create directory {}: {}", pathName, e.getMessage(), e);
+            return List.of();
+        }
         
         urlToExtensionMap.forEach((url, extension) -> {
             if (!isValidUrl(url)) {
@@ -58,7 +65,7 @@ public class Saver {
                 return;
             }
             
-            if (extension.length() == 0) {
+            if (extension.isEmpty()) {
                 log.debug("Bad extension: {}", url);
                 checkUrl.add(url);
             } else {
@@ -86,18 +93,8 @@ public class Saver {
      * Скачивает файл с поддержкой автоматической распаковки gzip-ответов
      */
     private void downloadWithGzipSupport(URL url, File destFile, int connectTimeout, int readTimeout) throws IOException {
-        URLConnection urlConnection = url.openConnection();
-        urlConnection.setConnectTimeout(connectTimeout);
-        urlConnection.setReadTimeout(readTimeout);
-        // Копируем все заголовки, как в getUrlConnection
-        urlConnection.addRequestProperty("User-Agent",
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
-        urlConnection.addRequestProperty("Accept",
-                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        urlConnection.addRequestProperty("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
-        urlConnection.addRequestProperty("Accept-Encoding", "gzip, deflate");
+        URLConnection urlConnection = getUrlConnection(url, connectTimeout, readTimeout);
         // urlConnection.addRequestProperty("Referer", "https://example.com/"); // если нужно
-
         try (InputStream is = urlConnection.getInputStream();
              OutputStream os = Files.newOutputStream(destFile.toPath())) {
             String encoding = urlConnection.getHeaderField("Content-Encoding");
@@ -122,6 +119,21 @@ public class Saver {
         List<String> failedDownloads = new ArrayList<>();
         List<String> invalidUrls = new ArrayList<>();
         List<String> urlsWithoutExtension = new ArrayList<>();
+        try {
+            checkDirectoryExists(pathName);
+        } catch (IOException e) {
+            log.error("Failed to create directory {}: {}", pathName, e.getMessage(), e);
+            return DownloadResultDto.builder()
+                    .successfulDownloads(List.of())
+                    .failedDownloads(List.of())
+                    .invalidUrls(List.of())
+                    .urlsWithoutExtension(List.of())
+                    .totalProcessed(0)
+                    .totalSuccessful(0)
+                    .totalFailed(0)
+                    .processingTimeMs(0)
+                    .build();
+        }
         
         urlToExtensionMap.forEach((url, extension) -> {
             if (!isValidUrl(url)) {
@@ -130,7 +142,7 @@ public class Saver {
                 return;
             }
             
-            if (extension.length() == 0) {
+            if (extension.isEmpty()) {
                 log.debug("Bad extension: {}", url);
                 urlsWithoutExtension.add(url);
             } else {
@@ -260,5 +272,26 @@ public class Saver {
             }
         }
         return "";
+    }
+
+    private void checkDirectoryExists(String pathName) throws IOException {
+        Path dir = Path.of(pathName);
+        if (!Files.exists(dir)) {
+            Files.createDirectories(dir);
+            log.info("Created directory: {}", pathName);
+        }
+    }
+
+    private static URLConnection getUrlConnection(URL url, int connectTimeout, int readTimeout) throws IOException {
+        URLConnection urlConnection = url.openConnection();
+        urlConnection.setConnectTimeout(connectTimeout);
+        urlConnection.setReadTimeout(readTimeout);
+        urlConnection.addRequestProperty("User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        urlConnection.addRequestProperty("Accept",
+                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+        urlConnection.addRequestProperty("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
+        urlConnection.addRequestProperty("Accept-Encoding", "gzip, deflate");
+        return urlConnection;
     }
 }
